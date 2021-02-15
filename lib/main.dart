@@ -1,21 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:optimized_parking_app/parkingSpot.dart';
+import 'package:optimized_parking_app/power.dart';
+import 'package:optimized_parking_app/powerBloc.dart';
+import 'package:optimized_parking_app/powerEvent.dart';
+import 'package:optimized_parking_app/powerState.dart';
 
 void main() {
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Optimized charging',
       theme: ThemeData(
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: MyHomePage(title: 'Parking'),
+      home: BlocProvider(
+          create: (BuildContext context) => PowerBloc()..add(UpdatePower(power: Power(numberOfOccupiedSlots: 0, power: 100,))),
+          child: MyHomePage(title: 'Parking')),
     );
   }
 }
@@ -30,18 +36,78 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  DateTime _date = DateTime.now();
+  PowerBloc _powerBloc = PowerBloc();
+
+  Power power;
+  TextEditingController _controller;
+  List<ParkingSpot> occupiedParkingSlots = [];
+  List<ParkingSpot> parkingSpots = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+    for(int i = 0; i < 50; i++){
+      parkingSpots.add(
+          ParkingSpot(id: i, power: power,)
+      );
+    }
+  }
+
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    int id = 1;
-    DateTime test;
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Center(
-        child: Column(
+      body: BlocBuilder<PowerBloc, PowerState>(
+        builder: (BuildContext context, PowerState powerState) {
+          if(powerState is UpdatedPowerState) {
+            power = powerState.power;
+
+            return Container(
+              width: MediaQuery
+                  .of(context)
+                  .size
+                  .width,
+              child: Center(
+                  child: Column(
+                    children: [
+                      FloatingActionButton(
+                          onPressed: () {
+                            setState(() {
+                              occupiedParkingSlots =
+                                  parkingSpots.where((element) => !element
+                                      .isFree).toList();
+                              BlocProvider.of<PowerBloc>(context).add(UpdatePower(power: Power(power: power.power, numberOfOccupiedSlots: occupiedParkingSlots.length,)));
+                              print(occupiedParkingSlots.length);
+                            });
+                          }
+                      ),
+                      Wrap(children: parkingSpots, runSpacing: 20, spacing: 5,),
+                      Text("Počet míst:${power.numberOfOccupiedSlots}"),
+                      Text("Celkový výkon:${power.power} kWh")
+                    ],
+                  )
+              ),
+            );
+          } else
+            {
+              return Text("hmmm");
+            }
+        }
+      ),
+    );
+  }
+
+  /*
+
+  Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             GestureDetector(
@@ -57,19 +123,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 _callDatePicker(context, id);
               },
             ),
-            Text("$_date")
           ],
         ),
-      ),
-    );
-  }
 
-  _callDatePicker(BuildContext context, int id) async{
-    DateTime selectedDate = await  DatePicker.showDateTimePicker(context, minTime: DateTime.now(), onConfirm: (date) {
-      setState(() {
-        _date = date;
-      });
-    }, currentTime: DateTime.now());
-    print("$selectedDate");
-  }
+   */
 }
