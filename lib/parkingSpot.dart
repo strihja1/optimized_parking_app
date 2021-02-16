@@ -67,7 +67,7 @@ class ParkingSpot extends StatefulWidget {
   _callDatePicker(BuildContext context) async{
     DateTime selectedDate = await DatePicker.showDateTimePicker(context, minTime: DateTime.now(), onConfirm: (date) {
       _updateParkingSpot(date);
-    }, currentTime: DateTime.now());
+    }, currentTime: DateTime.now(),);
   }
 
   _updateParkingSpot(DateTime selectedDate ){

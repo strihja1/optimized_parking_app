@@ -78,19 +78,8 @@ class _MyHomePageState extends State<MyHomePage> {
               child: Center(
                   child: Column(
                     children: [
-                      FloatingActionButton(
-                          onPressed: () {
-                            setState(() {
-                              occupiedParkingSlots =
-                                  parkingSpots.where((element) => !element
-                                      .isFree).toList();
-                              BlocProvider.of<PowerBloc>(context).add(UpdatePower(power: Power(power: power.power, numberOfOccupiedSlots: occupiedParkingSlots.length,)));
-                              print(occupiedParkingSlots.length);
-                            });
-                          }
-                      ),
                       Wrap(children: parkingSpots, runSpacing: 20, spacing: 5,),
-                      Text("Počet míst:${power.numberOfOccupiedSlots}"),
+                      Text("Počet obsazených míst:${power.numberOfOccupiedSlots}"),
                       Text("Celkový výkon:${power.power} kWh")
                     ],
                   )

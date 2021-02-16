@@ -25,9 +25,6 @@ class Power extends StatefulWidget {
       builder: (context, state) {
 
         if (state is UpdatedPowerState) {
-          print("occupied ${state.power.numberOfOccupiedSlots}");
-          print("power ${state.power.power}");
-          print("vydeleno ${state.power.power / state.power.numberOfOccupiedSlots}");
           return Text(
             state.power.numberOfOccupiedSlots == 0 ? "${state.power.power}" : "${ (state.power.power / state.power.numberOfOccupiedSlots).toStringAsFixed(1)}"
           );
