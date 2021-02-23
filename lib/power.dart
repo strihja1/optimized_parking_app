@@ -3,36 +3,16 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
+import 'package:optimized_parking_app/parkingSpot.dart';
 import 'package:optimized_parking_app/powerBloc.dart';
 import 'package:optimized_parking_app/powerState.dart';
 
-class Power extends StatefulWidget {
+class Power {
   double power;
   int numberOfOccupiedSlots;
+  int mode;
 
   Power({
-    this.power, this.numberOfOccupiedSlots
+    this.power, this.numberOfOccupiedSlots, this.mode
   });
-
-  @override
-  State<StatefulWidget> createState() => _PowerState();
-}
-  class _PowerState extends State<Power>{
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<PowerBloc, PowerState>(
-      builder: (context, state) {
-
-        if (state is UpdatedPowerState) {
-          return Text(
-            state.power.numberOfOccupiedSlots == 0 ? "${state.power.power}" : "${ (state.power.power / state.power.numberOfOccupiedSlots).toStringAsFixed(1)}"
-          );
-        }
-        else {
-          return Text("chyba");
-        }
-      }
-    );
-  }
 }
