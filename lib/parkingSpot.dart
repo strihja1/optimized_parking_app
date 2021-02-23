@@ -14,7 +14,7 @@ class ParkingSpot extends StatefulWidget {
   bool isFree;
   int priority;
   DateTime reservedUntil;
-  int chargingSpeed;
+  double chargingSpeed;
   Timer timer;
   Power power;
   Car car;
@@ -44,10 +44,15 @@ class ParkingSpot extends StatefulWidget {
       builder: (context, state) {
         if(state is UpdatedPowerState){
           widget.power = state.power;
-          dividedPower = widget.power.power / widget.power.numberOfOccupiedSlots;
+          if(widget.power.numberOfOccupiedSlots > 0) {
+            widget.chargingSpeed =
+                widget.power.power / widget.power.numberOfOccupiedSlots;
+          }else{
+            widget.chargingSpeed = widget.power.power;
+          }
         return GestureDetector(
           child: Container(
-            width: 60,
+            width: 80,
             height: 90,
             decoration: BoxDecoration(
                 border: Border.all(width: 2),
@@ -56,8 +61,8 @@ class ParkingSpot extends StatefulWidget {
             child: Column(
               children: [
                 Text("${widget.id}"),
-                widget.isFree ? Container() : Text("${(widget.power.power / widget.power.numberOfOccupiedSlots).toStringAsPrecision(2)} kWh"),
-                widget.isFree ? Container() : Text("${widget.car.actualCharge} %")
+                widget.isFree ? Container() : Text("${(widget.power.power / widget.power.numberOfOccupiedSlots).toStringAsPrecision(3)} kWh"),
+                widget.isFree ? Container() : Text("${widget.car.actualCharge.toStringAsPrecision(3)} %")
               ],
             ),
           ),
@@ -74,8 +79,8 @@ class ParkingSpot extends StatefulWidget {
 
   _callDatePicker(BuildContext context) async{
     DateTime selectedDate = await DatePicker.showDateTimePicker(context, minTime: DateTime.now(), onConfirm: (date) async {
-       await _displayTextInputDialog(context);
-      _updateParkingSpot(date);
+       await _displayTextInputDialog(context, date);
+
     }, currentTime: DateTime.now(),);
   }
 
@@ -84,7 +89,6 @@ class ParkingSpot extends StatefulWidget {
       setState(() {
         widget.reservedUntil = selectedDate;
         BlocProvider.of<PowerBloc>(context).add(UpdatePower(power: Power(numberOfOccupiedSlots: widget.power.numberOfOccupiedSlots+1, power: widget.power.power,)));
-        print("ahoj");
       });
     }
   }
@@ -95,10 +99,14 @@ class ParkingSpot extends StatefulWidget {
         widget.isFree = true;
         BlocProvider.of<PowerBloc>(context).add(UpdatePower(power: Power(numberOfOccupiedSlots: widget.power.numberOfOccupiedSlots-1, power: widget.power.power,)));
       });
+    }else if(!widget.isFree && widget.car.actualCharge < 100){
+      setState(() {
+        widget.car.actualCharge = widget.car.actualCharge + (widget.chargingSpeed/60/6);
+      });
     }
   }
 
-    Future<void> _displayTextInputDialog(BuildContext context) async {
+    Future<void> _displayTextInputDialog(BuildContext context, DateTime date) async {
       return showDialog(
           context: context,
           builder: (context) {
@@ -133,6 +141,7 @@ class ParkingSpot extends StatefulWidget {
                       codeDialog = valueText;
                       widget.car = Car(batteryCapacity: 100, actualCharge: double.tryParse(valueText),);
                       widget.isFree = false;
+                      _updateParkingSpot(date);
                       Navigator.pop(context);
                     });
                   },
