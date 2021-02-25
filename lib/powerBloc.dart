@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
-import 'package:optimized_parking_app/power.dart';
 import 'package:optimized_parking_app/powerEvent.dart';
 import 'package:optimized_parking_app/powerState.dart';
 

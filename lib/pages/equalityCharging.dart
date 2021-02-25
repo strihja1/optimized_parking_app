@@ -7,6 +7,7 @@ import 'package:optimized_parking_app/parkingSpot.dart';
 import 'package:optimized_parking_app/power.dart';
 import 'package:optimized_parking_app/powerBloc.dart';
 import 'package:optimized_parking_app/powerState.dart';
+import 'package:optimized_parking_app/powerEvent.dart';
 
 
 class EqualityCharging extends StatefulWidget {
@@ -28,6 +29,7 @@ class _EqualityChargingState extends State<EqualityCharging> {
   void initState() {
     super.initState();
     _controller = TextEditingController();
+    BlocProvider.of<PowerBloc>(context).add(UpdatePower(power: Power(numberOfOccupiedSlots: 0, power: 100)));
     for(int i = 0; i < 50; i++){
       parkingSpots.add(
           ParkingSpot(id: i)
@@ -56,6 +58,7 @@ class _EqualityChargingState extends State<EqualityCharging> {
       body: BlocBuilder<PowerBloc, PowerState>(
           builder: (BuildContext context, PowerState powerState) {
             if(powerState is UpdatedPowerState) {
+              print("test");
               power = powerState.power;
               return SingleChildScrollView(
                 child: Container(

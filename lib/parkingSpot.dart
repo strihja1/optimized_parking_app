@@ -18,9 +18,10 @@ class ParkingSpot extends StatefulWidget {
   Timer timer;
   Power power;
   Car car;
+  final int mode;
 
   ParkingSpot({
-    this.id, this.isFree = true, this.priority, this.reservedUntil, this.power
+    this.id, this.isFree = true, this.priority, this.reservedUntil, this.power, this.mode
   });
 
   @override
@@ -33,6 +34,12 @@ class ParkingSpot extends StatefulWidget {
     double dividedPower;
     TextEditingController _textFieldController = TextEditingController();
 
+    @override
+  void dispose() {
+    super.dispose();
+    timer.cancel();
+  }
+
   @override
   Widget build(BuildContext context) {
     if(timer != null){
@@ -44,38 +51,77 @@ class ParkingSpot extends StatefulWidget {
       builder: (context, state) {
         if(state is UpdatedPowerState){
           widget.power = state.power;
-          if(widget.power.numberOfOccupiedSlots > 0) {
-            widget.chargingSpeed =
-                widget.power.power / widget.power.numberOfOccupiedSlots;
+          if(widget.mode == 1){
+            return timeBasedCharging(color, context);
           }else{
-            widget.chargingSpeed = widget.power.power;
+            return equalityCharging(color, context);
           }
-        return GestureDetector(
-          child: Container(
-            width: 80,
-            height: 90,
-            decoration: BoxDecoration(
-                border: Border.all(width: 2),
-              color: color
-            ),
-            child: Column(
-              children: [
-                Text("${widget.id}"),
-                widget.isFree ? Container() : Text("${(widget.power.power / widget.power.numberOfOccupiedSlots).toStringAsPrecision(3)} kWh"),
-                widget.isFree ? Container() : Text("${widget.car.actualCharge.toStringAsPrecision(3)} %")
-              ],
-            ),
-          ),
-          onTap: ()  {
-             _callDatePicker(context);
-          },
-        );
       }else{
           return Container();
         }
       }
     );
   }
+
+  GestureDetector equalityCharging(Color color, BuildContext context) {
+    if(widget.power.numberOfOccupiedSlots > 0) {
+      widget.chargingSpeed =
+          widget.power.power / widget.power.numberOfOccupiedSlots;
+    }else{
+      widget.chargingSpeed = widget.power.power;
+    }
+            return GestureDetector(
+    child: Container(
+      width: 80,
+      height: 90,
+      decoration: BoxDecoration(
+          border: Border.all(width: 2),
+        color: color
+      ),
+      child: Column(
+        children: [
+          Text("${widget.id}"),
+          widget.isFree ? Container() : Text("${(widget.power.power / widget.power.numberOfOccupiedSlots).toStringAsFixed(2)} kWh"),
+          widget.isFree ? Container() : Text("${widget.car.actualCharge.toStringAsFixed(2)} %")
+        ],
+      ),
+    ),
+    onTap: ()  {
+       _callDatePicker(context);
+    },
+            );
+  }
+
+    GestureDetector timeBasedCharging(Color color, BuildContext context) {
+      if(widget.power.numberOfOccupiedSlots > 0) {
+        widget.chargingSpeed =
+            widget.power.power / widget.power.numberOfOccupiedSlots;
+      }else{
+        widget.chargingSpeed = widget.power.power;
+      }
+      return GestureDetector(
+        child: Container(
+          width: 80,
+          height: 90,
+          decoration: BoxDecoration(
+              border: Border.all(width: 2),
+              color: color
+          ),
+          child: Column(
+            children: [
+              Text("${widget.id}"),
+              widget.isFree ? Container() : Text("${(widget.power.power / widget.power.numberOfOccupiedSlots).toStringAsFixed(2)} kWh"),
+              widget.isFree ? Container() : Text("${widget.car.actualCharge.toStringAsFixed(2)} %"),
+              widget.isFree || widget.reservedUntil == null ? Container() : Text("Do: ${widget.reservedUntil.hour}:${widget.reservedUntil.minute}"),
+              widget.isFree ? Container() : Text(" ${widget.priority}")
+            ],
+          ),
+        ),
+        onTap: ()  {
+          _callDatePicker(context);
+        },
+      );
+    }
 
   _callDatePicker(BuildContext context) async{
     DateTime selectedDate = await DatePicker.showDateTimePicker(context, minTime: DateTime.now(), onConfirm: (date) async {
