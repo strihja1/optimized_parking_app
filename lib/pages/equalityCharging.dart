@@ -39,6 +39,7 @@ class _EqualityChargingState extends State<EqualityCharging> {
 
   void dispose() {
     _controller.dispose();
+    timer.cancel();
     super.dispose();
   }
 
@@ -58,7 +59,6 @@ class _EqualityChargingState extends State<EqualityCharging> {
       body: BlocBuilder<PowerBloc, PowerState>(
           builder: (BuildContext context, PowerState powerState) {
             if(powerState is UpdatedPowerState) {
-              print("test");
               power = powerState.power;
               return SingleChildScrollView(
                 child: Container(

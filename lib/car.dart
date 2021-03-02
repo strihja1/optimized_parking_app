@@ -1,6 +1,6 @@
 class Car {
   final double batteryCapacity;
-  final DateTime timeUntilCharged;
+  DateTime timeUntilCharged;
   double actualCharge;
 
   Car({

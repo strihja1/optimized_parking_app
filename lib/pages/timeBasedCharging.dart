@@ -39,6 +39,7 @@ class _TimeBasedChargingState extends State<TimeBasedCharging> {
 
   void dispose() {
     _controller.dispose();
+    timer.cancel();
     super.dispose();
   }
 
