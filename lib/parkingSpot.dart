@@ -13,16 +13,17 @@ import 'package:intl/intl.dart';
 class ParkingSpot extends StatefulWidget {
   final int id;
   bool isFree;
-  int priority;
+  int priority = 99;
   DateTime reservedUntil;
   double chargingSpeed;
   Timer timer;
   Power power;
   Car car;
   final int mode;
+  double requiredPowerToFullyCharge;
 
   ParkingSpot({
-    this.id, this.isFree = true, this.priority, this.reservedUntil, this.power, this.mode,
+    this.id, this.isFree = true, this.priority, this.reservedUntil, this.power, this.mode, this.requiredPowerToFullyCharge = 0
   });
 
   @override
@@ -35,6 +36,7 @@ class ParkingSpot extends StatefulWidget {
     double dividedPower;
     DateTime selectedDate;
     TextEditingController _textFieldController = TextEditingController();
+    double remainingBatteryToCharge;
 
     @override
   void dispose() {
@@ -54,11 +56,9 @@ class ParkingSpot extends StatefulWidget {
         if(state is UpdatedPowerState){
           widget.power = state.power;
           if(!widget.isFree) {
-            double remainingBatteryToCharge = widget.car.batteryCapacity -
+            remainingBatteryToCharge = widget.car.batteryCapacity -
                 widget.car.actualCharge;
-            double secondsUntilCharged = remainingBatteryToCharge /
-                widget.chargingSpeed * 60 * 60;
-            widget.car.timeUntilCharged = DateTime.now().toLocal().add(Duration(seconds: secondsUntilCharged.toInt()));
+            widget.car.timeUntilCharged = calculateTimeUntilCharged(chargingSpeed: widget.chargingSpeed);
           }
           if(widget.mode == 1){
             return timeBasedCharging(color, context);
@@ -71,6 +71,18 @@ class ParkingSpot extends StatefulWidget {
       }
     );
   }
+
+   DateTime calculateTimeUntilCharged({double chargingSpeed}) {
+    double secondsUntilCharged = remainingBatteryToCharge /
+        chargingSpeed * 3600;
+    return DateTime.now().toLocal().add(Duration(seconds: secondsUntilCharged.toInt()));
+  }
+
+    double calculateRequiredSpeedFromTime({double seconds}) {
+      return remainingBatteryToCharge /
+          seconds * 3600;
+
+    }
 
   GestureDetector equalityCharging(Color color, BuildContext context) {
     if(widget.power.numberOfOccupiedSlots > 0) {
@@ -93,7 +105,7 @@ class ParkingSpot extends StatefulWidget {
           widget.isFree ? Container() : Text("${(widget.power.power / widget.power.numberOfOccupiedSlots).toStringAsFixed(2)} kWh"),
           widget.isFree ? Container() : Text("${widget.car.actualCharge.toStringAsFixed(2)} %"),
           widget.isFree || widget.reservedUntil == null ? Container() : Text("Do: ${dateTimeFormatToString(widget.reservedUntil)}"),
-          widget.isFree ? Container() : Text("Očekávané nabití v : ${dateTimeFormatToString(widget.car.timeUntilCharged.toLocal())}")
+          widget.isFree ? Container() : Text("Očekávané nabití v : ${dateTimeFormatToString(widget.car.timeUntilCharged.toLocal())}"),
         ],
       ),
     ),
@@ -111,10 +123,12 @@ class ParkingSpot extends StatefulWidget {
         widget.chargingSpeed = widget.power.power;
       }
 
+      calculateRequiredPower();
+
       // widget.minutesUntilCharged = widget.chargingSpeed
       return GestureDetector(
         child: Container(
-          width: 90,
+          width: 150,
           height: 200,
           decoration: BoxDecoration(
               border: Border.all(width: 2),
@@ -127,7 +141,8 @@ class ParkingSpot extends StatefulWidget {
               widget.isFree ? Container() : Text("${widget.car.actualCharge.toStringAsFixed(2)} %"),
               widget.isFree || widget.reservedUntil == null ? Container() : Text("Do: ${dateTimeFormatToString(widget.reservedUntil)}"),
               widget.isFree ? Container() : Text("Priorita: ${widget.priority}"),
-              widget.isFree ? Container() : Text("Očekávané nabití v : ${dateTimeFormatToString(widget.car.timeUntilCharged.toLocal())}")
+              widget.isFree ? Container() : Text("Očekávané nabití v : ${dateTimeFormatToString(widget.car.timeUntilCharged.toLocal())}"),
+              widget.isFree ? Container() : Text("Požadovaný výkon do odjetí : ${widget.requiredPowerToFullyCharge.toStringAsFixed(2)} kWh")
             ],
           ),
         ),
@@ -135,6 +150,28 @@ class ParkingSpot extends StatefulWidget {
           _callDatePicker(context);
         },
       );
+    }
+
+    void calculateRequiredPower() async {
+      if(!widget.isFree && widget.reservedUntil.isAfter(widget.car.timeUntilCharged)){ // stihne se nabít
+        for(double i = widget.chargingSpeed; i > 0 ; i--){
+          DateTime timeUntilCharged = calculateTimeUntilCharged(chargingSpeed: i);
+          if(widget.reservedUntil.isAfter(timeUntilCharged)) {
+            widget.requiredPowerToFullyCharge = i;
+          }
+        }
+      }else if(!widget.isFree && widget.reservedUntil.isBefore(widget.car.timeUntilCharged)){ // nestihne se nabít
+        double i = widget.chargingSpeed;
+        DateTime timeUntilChargedWithCalculationPower = calculateTimeUntilCharged(chargingSpeed: i);
+
+        while(widget.reservedUntil.isBefore(timeUntilChargedWithCalculationPower)){
+        //for(double i = widget.chargingSpeed; i < widget.power.power ; i++){
+          print(timeUntilChargedWithCalculationPower);
+          timeUntilChargedWithCalculationPower = calculateTimeUntilCharged(chargingSpeed: i);
+          i = i+10;
+        }
+        widget.requiredPowerToFullyCharge = i;
+      }
     }
 
     String dateTimeFormatToString(DateTime dateTime) =>
@@ -151,7 +188,6 @@ class ParkingSpot extends StatefulWidget {
     print("selected $selectedDate");
     print(DateTime.now().toLocal());
     if(selectedDate.isAfter(DateTime.now().toLocal())){
-      print("ano");
       setState(() {
         widget.reservedUntil = selectedDate;
         BlocProvider.of<PowerBloc>(context).add(UpdatePower(power: Power(numberOfOccupiedSlots: widget.power.numberOfOccupiedSlots+1, power: widget.power.power,)));
@@ -160,9 +196,6 @@ class ParkingSpot extends StatefulWidget {
   }
 
   _monitorParkingSpot(){
-    print("monitorParkingSpot");
-    print("${widget.isFree}");
-    print("${widget.reservedUntil}");
     if(!widget.isFree && widget.reservedUntil != null && widget.reservedUntil.isBefore(DateTime.now().toLocal())){
       setState(() {
         widget.isFree = true;

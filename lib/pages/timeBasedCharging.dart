@@ -50,7 +50,6 @@ class _TimeBasedChargingState extends State<TimeBasedCharging> {
     }
     timer = Timer.periodic(const Duration(seconds:10), (Timer t) => _refreshOccupiedSlots());
     occupiedParkingSlots = parkingSpots.where((element) => !element.isFree).toList();
-    print(occupiedParkingSlots.length);
     occupiedParkingSlots.sort((a,b) => a.reservedUntil.compareTo(b.reservedUntil));
     for(int i = 0; i < occupiedParkingSlots.length; i++ ){
       occupiedParkingSlots.elementAt(i).priority = i;
